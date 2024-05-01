@@ -82,7 +82,7 @@ class LogKonfig:
             config = yaml.safe_load(config_file)
         return config
 
-    def initialize_log_file(self, log_file_key: str) -> None:
+    def initialize_log_file(self, log_file_key: str | None) -> None:
         """
         Initializes the log file by creating it if it doesn't exist and adding a header.
 
@@ -93,10 +93,30 @@ class LogKonfig:
             raise ValueError(
                 "Logging configuration is not initialized. Please call init_logging() first"
             )
+
+        # Check if log_file_key is not provided and if only one log path is configured
+        if log_file_key is None:
+            keys = list(self._logging_config["log_file_paths"].keys())
+            if len(keys) == 1:
+                log_file_key = keys[0]
+            else:
+                print("Multiple log files configured, please specify a log_file_key.")
+                return
+
         log_file_path = self._logging_config["log_file_paths"][log_file_key]
         if not os.path.exists(log_file_path):
             with open(log_file_path, "w") as log_file:
                 log_file.write("Log File Initialized\n\n")
+
+
+def initialize_log_file(log_file_key: str | None) -> None:
+    """
+    Initializes the log file by creating it if it doesn't exist and adding a header.
+
+    Args:
+        log_file_key (str): The key of the log file path in the logging configuration.
+    """
+    pass
 
 
 def truncate_string(value: Any, max_length: int = 500) -> str:
@@ -244,35 +264,6 @@ def log_variable(
     log_message(
         log_file_key, variables={variable_name: variable_value}, log_level=log_level
     )
-
-
-def initialize_log_file(log_file_key: str | None) -> None:
-    """
-    Initializes the log file by creating it if it doesn't exist and adding a header.
-
-    Args:
-        log_file_key (str): The key of the log file path in the logging configuration.
-    """
-    logging_config = LogKonfig().get_logging_config()
-    if logging_config is None:
-        print(
-            "Logging configuration is not initialized. Please call init_logging() first."
-        )
-        return
-
-    # Check if log_file_key is not provided and if only one log path is configured
-    if log_file_key is None:
-        keys = list(logging_config["log_file_paths"].keys())
-        if len(keys) == 1:
-            log_file_key = keys[0]
-        else:
-            print("Multiple log files configured, please specify a log_file_key.")
-            return
-
-    log_file_path = logging_config["log_file_paths"][log_file_key]
-    if not os.path.exists(log_file_path):
-        with open(log_file_path, "w") as log_file:
-            log_file.write("Log File Initialized\n\n")
 
 
 def log_json_content(

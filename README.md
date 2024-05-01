@@ -30,7 +30,7 @@ pip install .
 Here's a quick example to get you started with LogKontrol:
 
 ```python
-from logkontrol.logkontrol import LogKonfig, log_message
+from logkontrol import LogKonfig, log_message
 
 # Initialize the logging system
 log_konfig = LogKonfig()

@@ -292,16 +292,42 @@ def log_json_content(
 
 
 def load_logging_konfig(konfig_file_path: str):
+    """
+    Easter Egg function! Loads the logging configuration from a YAML file.
+
+    Args:
+        konfig_file_path (str): The path to the logging configuration file.
+
+    Returns:
+        dict: The loaded logging configuration.
+    """
     return load_logging_config(konfig_file_path)
 
 
 def log_funktion_kall(
     log_file_key: str, funktion_name: str, log_level: str = "DEBUG", **kwargs
 ):
+    """
+    Easter Egg function! Logs a function call with its arguments.
+
+    Args:
+        log_file_key (str): The key of the log file path in the logging configuration.
+        funktion_name (str): The name of the function being called.
+        log_level (str, optional): The log level of the function call. Defaults to "DEBUG".
+        **kwargs: Keyword arguments representing the function's arguments.
+    """
     return log_function_call(log_file_key, funktion_name, log_level, **kwargs)
 
 
 def log_json_kontent(
     log_file_key: str, json_kontent: dict | list[dict], log_level: str = "DEBUG"
 ):
+    """
+    Easter Egg function! Logs the content of a JSON object or a list of JSON objects in a pretty-printed format.
+
+    Args:
+        log_file_key (str): The key of the log file path in the logging configuration.
+        json_kontent (dict | list[dict]): The JSON object or list of JSON objects to log.
+        log_level (str, optional): The log level of the JSON content. Defaults to "DEBUG".
+    """
     return log_json_content(log_file_key, json_kontent, log_level)

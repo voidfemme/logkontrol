@@ -8,6 +8,7 @@ from logkontrol import logkontrol
 
 class TestInitLogging(unittest.TestCase):
     def setUp(self):
+        self.log_konfig = logkontrol.LogKonfig()
         self.default_config_path = "logging_config.yaml"
         self.default_log_directory = "logs"
         self.custom_config_path = "custom_config.yaml"
@@ -30,30 +31,30 @@ class TestInitLogging(unittest.TestCase):
 
     def test_default_config_creation(self):
         # Test case: Configuration file doesn't exist
-        logkontrol.init_logging()
+        self.log_konfig.init_logging()
         self.assertTrue(os.path.exists(self.default_config_path))
         self.assertTrue(os.path.exists(self.default_log_directory))
 
-    @patch("logkontrol.logkontrol.load_logging_config")
+    @patch.object(logkontrol.LogKonfig, "load_logging_config")
     def test_existing_config_loading(self, mock_load_config):
         # Test case: Configuration file exists
         with open(self.default_config_path, "w") as file:
             file.write("# Existing configuration")
-        logkontrol.init_logging()
+        self.log_konfig.init_logging()
         mock_load_config.assert_called_once_with(self.default_config_path)
 
     def test_custom_config_path(self):
         # Test case: Custom configuration file path
-        logkontrol.init_logging(config_file_path=self.custom_config_path)
+        self.log_konfig.init_logging(config_file_path=self.custom_config_path)
         self.assertTrue(os.path.exists(self.custom_config_path))
 
     def test_custom_log_directory(self):
         # Test case: Custom log directory
-        logkontrol.init_logging(log_directory=self.custom_log_directory)
+        self.log_konfig.init_logging(log_directory=self.custom_log_directory)
         self.assertTrue(os.path.exists(self.custom_log_directory))
 
     @patch("builtins.open", side_effect=IOError("Failed to open file"))
     def test_invalid_config_file(self, mock_open):
         # Test case: Invalid configuration file
         with self.assertRaises(IOError):
-            logkontrol.init_logging()
+            self.log_konfig.init_logging()

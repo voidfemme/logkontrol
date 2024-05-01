@@ -9,68 +9,117 @@ import yaml
 from datetime import datetime
 
 
-logging_config = None
+class LogKonfig:
+    _instance = None
+    _logging_config = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def init_logging(
+        self, config_file_path: str | None = None, log_directory: str = "logs"
+    ) -> None:
+        """
+        Initializes the logging configuration.
+
+        Args:
+            config_file_path (str | None, optional): The path to the logging configuration file.
+                If not provided, defaults to "logging_config.yaml".
+            log_directory (str, optional): The directory where log files will be stored.
+                Defaults to "logs".
+        """
+        if config_file_path is None:
+            config_file_path = "logging_config.yaml"
+
+        if not os.path.exists(config_file_path):
+            # Create the log directory if it doesn't exist
+            os.makedirs(log_directory, exist_ok=True)
+
+            # Generate a default YAML configuration
+            default_config = {
+                "log_file_paths": {
+                    "general": f"{log_directory}/general.log",
+                },
+                "log_format": "[{timestamp}] [{level}] {message}",
+                "timestamp_format": "%Y-%m-%d %H:%M:%S",
+                "log_level": "INFO",
+                "console_output": True,
+            }
+
+            # Write the default configuration to the YAML file
+            with open(config_file_path, "w") as config_file:
+                yaml.dump(default_config, config_file)
+
+        # Load the logging configuration from the YAML file
+        self._logging_config = self.load_logging_config(config_file_path)
+
+        # Initialize the log files if the logging configuration is loaded successfully
+        if self._logging_config is not None:
+            for log_file_key in self._logging_config["log_file_paths"]:
+                self.initialize_log_file(log_file_key)
+
+    def get_logging_config(self) -> dict | None:
+        return self._logging_config
+
+    def set_logging_config(self, config: dict) -> None:
+        self._logging_config = config
+
+    @staticmethod
+    def load_logging_config(config_file_path: str) -> dict:
+        """
+        Loads the logging configuration from a YAML file.
+
+        Args:
+            config_file_path (str): The path to the logging configuration file.
+
+        Returns:
+            dict: The loaded logging configuration.
+        """
+        config_path = Path(config_file_path)
+        with open(config_path, "r") as config_file:
+            config = yaml.safe_load(config_file)
+        return config
+
+    def initialize_log_file(self, log_file_key: str | None) -> None:
+        """
+        Initializes the log file by creating it if it doesn't exist and adding a header.
+
+        Args:
+            log_file_key (str): The key of the log file path in the logging configuration.
+        """
+        if self._logging_config is None:
+            raise ValueError(
+                "Logging configuration is not initialized. Please call init_logging() first"
+            )
+
+        # Check if log_file_key is not provided and if only one log path is configured
+        if log_file_key is None:
+            keys = list(self._logging_config["log_file_paths"].keys())
+            if len(keys) == 1:
+                log_file_key = keys[0]
+            else:
+                print("Multiple log files configured, please specify a log_file_key.")
+                return
+
+        log_file_path = self._logging_config["log_file_paths"][log_file_key]
+        if not os.path.exists(log_file_path):
+            with open(log_file_path, "w") as log_file:
+                log_file.write("Log File Initialized\n\n")
 
 
-def init_logging(config_file_path: str | None = None, log_directory: str = "logs"):
+def initialize_log_file(log_file_key: str | None) -> None:
     """
-    Initializes the logging configuration.
+    Initializes the log file by creating it if it doesn't exist and adding a header.
 
     Args:
-        config_file_path (str | None, optional): The path to the logging configuration file.
-            If not provided, defaults to "logging_config.yaml".
-        log_directory (str, optional): The directory where log files will be stored.
-            Defaults to "logs".
+        log_file_key (str): The key of the log file path in the logging configuration.
     """
-    global logging_config
-
-    if config_file_path is None:
-        config_file_path = "logging_config.yaml"
-
-    if not os.path.exists(config_file_path):
-        # Create the log directory if it doesn't exist
-        os.makedirs(log_directory, exist_ok=True)
-
-        # Generate a default YAML configuration
-        default_config = {
-            "log_file_paths": {
-                "general": f"{log_directory}/general.log",
-            },
-            "log_format": "[{timestamp}] [{level}] {message}",
-            "timestamp_format": "%Y-%m-%d %H:%M:%S",
-            "log_level": "INFO",
-            "console_output": True,
-        }
-
-        # Write the default configuration to the YAML file
-        with open(config_file_path, "w") as config_file:
-            yaml.dump(default_config, config_file)
-
-    # Load the logging configuration from the YAML file
-    logging_config = load_logging_config(config_file_path)
-
-    # Initialize the log files
-    for log_file_key in logging_config["log_file_paths"]:
-        initialize_log_file(log_file_key)
+    pass
 
 
-def load_logging_config(config_file_path: str):
-    """
-    Loads the logging configuration from a YAML file.
-
-    Args:
-        config_file_path (str): The path to the logging configuration file.
-
-    Returns:
-        dict: The loaded logging configuration.
-    """
-    config_path = Path(config_file_path)
-    with open(config_path, "r") as config_file:
-        config = yaml.safe_load(config_file)
-    return config
-
-
-def truncate_string(value: Any, max_length: int = 500):
+def truncate_string(value: Any, max_length: int = 500) -> str:
     """
     Truncates a string to a maximum length and appends "..." if truncated.
 
@@ -92,7 +141,7 @@ def log_message(
     message: str | None = None,
     variables: dict | None = None,
     log_level: str = "DEBUG",
-):
+) -> None:
     """
     Logs a message and/or variable values to a file.
 
@@ -104,6 +153,7 @@ def log_message(
         log_level (str, optional): The log level of the message. Defaults to "DEBUG".
     """
 
+    logging_config = LogKonfig().get_logging_config()
     if logging_config is None:
         print(
             "Logging configuration is not initialized. Please call init_logging() first."
@@ -144,7 +194,7 @@ def log_message(
 
 def log_function_call(
     log_file_key: str | None, function_name: str, log_level: str = "DEBUG", **kwargs
-):
+) -> None:
     """
     Logs a function call with its arguments.
 
@@ -154,6 +204,7 @@ def log_function_call(
         log_level (str, optional): The log level of the function call. Defaults to "DEBUG".
         **kwargs: Keyword arguments representing the function's arguments.
     """
+    logging_config = LogKonfig().get_logging_config()
     if logging_config is None:
         print(
             "Logging configuration is not initialized. Please call init_logging() first."
@@ -182,7 +233,7 @@ def log_variable(
     variable_name: str,
     variable_value: Any,
     log_level: str = "DEBUG",
-):
+) -> None:
     """
     Logs a variable and its value.
 
@@ -192,6 +243,7 @@ def log_variable(
         variable_value: The value of the variable.
         log_level (str, optional): The log level of the variable. Defaults to "DEBUG".
     """
+    logging_config = LogKonfig().get_logging_config()
     if logging_config is None:
         print(
             "Logging configuration is not initialized. Please call init_logging() first."
@@ -214,37 +266,9 @@ def log_variable(
     )
 
 
-def initialize_log_file(log_file_key: str | None):
-    """
-    Initializes the log file by creating it if it doesn't exist and adding a header.
-
-    Args:
-        log_file_key (str): The key of the log file path in the logging configuration.
-    """
-    if logging_config is None:
-        print(
-            "Logging configuration is not initialized. Please call init_logging() first."
-        )
-        return
-
-    # Check if log_file_key is not provided and if only one log path is configured
-    if log_file_key is None:
-        keys = list(logging_config["log_file_paths"].keys())
-        if len(keys) == 1:
-            log_file_key = keys[0]
-        else:
-            print("Multiple log files configured, please specify a log_file_key.")
-            return
-
-    log_file_path = logging_config["log_file_paths"][log_file_key]
-    if not os.path.exists(log_file_path):
-        with open(log_file_path, "w") as log_file:
-            log_file.write("Log File Initialized\n\n")
-
-
 def log_json_content(
     log_file_key: str | None, json_content: dict | list[dict], log_level: str = "DEBUG"
-):
+) -> None:
     """
     Logs the content of a JSON object or a list of JSON objects in a pretty-printed format.
 
@@ -253,6 +277,7 @@ def log_json_content(
         json_content (dict | list[dict]): The JSON object or list of JSON objects to log.
         log_level (str, optional): The log level of the JSON content. Defaults to "DEBUG".
     """
+    logging_config = LogKonfig().get_logging_config()
     if logging_config is None:
         print(
             "Logging configuration is not initialized. Please call init_logging() first."
@@ -291,9 +316,22 @@ def log_json_content(
         log_file.write(log_entry)
 
 
-def load_logging_konfig(konfig_file_path: str):
+def load_logging_config(config_file_path: str) -> dict:
     """
-    Easter Egg function! Loads the logging configuration from a YAML file.
+    Loads the logging configuration from a YAML file.
+
+    Args:
+        config_file_path (str): The path to the logging configuration file.
+
+    Returns:
+        dict: The loaded logging configuration.
+    """
+    return LogKonfig.load_logging_config(config_file_path)
+
+
+def load_logging_konfig(konfig_file_path: str) -> dict:
+    """
+    Loads the logging configuration from a YAML file.
 
     Args:
         konfig_file_path (str): The path to the logging configuration file.
@@ -301,14 +339,14 @@ def load_logging_konfig(konfig_file_path: str):
     Returns:
         dict: The loaded logging configuration.
     """
-    return load_logging_config(konfig_file_path)
+    return LogKonfig.load_logging_config(konfig_file_path)
 
 
 def log_funktion_kall(
     log_file_key: str, funktion_name: str, log_level: str = "DEBUG", **kwargs
-):
+) -> None:
     """
-    Easter Egg function! Logs a function call with its arguments.
+    Logs a function call with its arguments.
 
     Args:
         log_file_key (str): The key of the log file path in the logging configuration.
@@ -321,9 +359,9 @@ def log_funktion_kall(
 
 def log_json_kontent(
     log_file_key: str, json_kontent: dict | list[dict], log_level: str = "DEBUG"
-):
+) -> None:
     """
-    Easter Egg function! Logs the content of a JSON object or a list of JSON objects in a pretty-printed format.
+    Logs the content of a JSON object or a list of JSON objects in a pretty-printed format.
 
     Args:
         log_file_key (str): The key of the log file path in the logging configuration.

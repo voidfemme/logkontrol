@@ -30,10 +30,11 @@ pip install .
 Here's a quick example to get you started with LogKontrol:
 
 ```python
-from logkontrol.logkontrol import init_logging, log_message
+from logkontrol.logkontrol import LogKonfig, log_message
 
 # Initialize the logging system
-init_logging()
+log_konfig = LogKonfig()
+log_konfig.init_logging()
 
 # Log a simple message
 log_message('general', 'Hello, world!')
@@ -41,7 +42,7 @@ log_message('general', 'Hello, world!')
 
 ## Configuration
 
-LogKontrol is highly customizable through a simple YAML configuration file. Here's the default configuration:
+LogKontrol is highly customizable through a simple YAML configuration file. Here's an example configuration:
 
 ```yaml
 log_file_paths:
@@ -57,7 +58,7 @@ console_output: True
 Or, specify a different configuration file during initialization:
 
 ```python
-init_logging(config_file_path='path/to/your/config.yaml')
+log_konfig.init_logging(config_file_path='path/to/your/config.yaml')
 ```
 
 To add your own logging categories, simply add a new entry under 'log_file_paths' in the
